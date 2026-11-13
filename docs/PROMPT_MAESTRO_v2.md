@@ -1,6 +1,6 @@
 # PROMPT MAESTRO v2: SOFTWARE DE SETUP ORTODÓNCICO 3D ASISTIDO POR IA (WINDOWS)
 
-> Versión 2 · 13-11-2026. Reemplaza a la v1 e incorpora los resultados de la auditoría de viabilidad (`docs/AUDITORIA_VIABILIDAD.md`) y el estado real del repositorio (`docs/ESTADO_PROYECTO.md`). Si este prompt y esos documentos discrepan sobre el **estado**, mandan los documentos; si discrepan sobre **reglas**, manda este prompt.
+> Versión 2.1 · 13-11-2026 (2.1: repositorio en GitHub, CI en Windows aprobado y flujo de trabajo con Git). Reemplaza a la v1 e incorpora los resultados de la auditoría de viabilidad (`docs/AUDITORIA_VIABILIDAD.md`) y el estado real del repositorio (`docs/ESTADO_PROYECTO.md`). Si este prompt y esos documentos discrepan sobre el **estado**, mandan los documentos; si discrepan sobre **reglas**, manda este prompt.
 
 ---
 
@@ -61,9 +61,21 @@ Estas decisiones ya fueron tomadas. Solo se pueden cambiar con una justificació
 - Se comunican con la aplicación solo mediante archivos en una carpeta de intercambio: malla de entrada → etiquetas por vértice + metadatos de confianza y versión del modelo.
 - La aplicación de Windows nunca depende de WSL para funcionar; la segmentación es un complemento.
 
-**Validación en Windows**
-- **GitHub Actions** con `windows-latest` (gratuito en repositorios públicos y con cuota mensual en privados) ejecuta `pytest` en cada cambio. Ver `.github/workflows/pruebas.yml`.
-- El repositorio debe ser **privado** mientras pueda contener algo sensible. Las mallas nunca se suben a GitHub (están en `.gitignore`).
+**Repositorio y control de versiones**
+- Repositorio oficial: **https://github.com/fmaldonadoar-rgb/ortosetup** (rama `main`). En el computador del propietario se clona en `C:\dev\ortosetup`.
+- Visibilidad actual: **pública**. Decisión pendiente del propietario: pasarlo a privado si contempla uso comercial o quiere proteger el desarrollo. Mientras sea público, no se sube nada que identifique pacientes, clínicas ni credenciales.
+- Las mallas (`*.stl`, `*.ply`, `*.obj`), `caso_sintetico/`, `reporte_entorno.txt` y `.venv/` nunca se suben (están en `.gitignore`). Los datos de prueba se generan con `tools/make_synthetic_case.py`.
+- Flujo de trabajo:
+  - Un commit por tarea, con mensaje descriptivo en español.
+  - El agente sube cambios a GitHub (`git push`) **solo con la autorización del propietario**.
+  - Una tarea se considera terminada solo cuando el CI queda en verde en Windows y Linux.
+  - Para cambios grandes o riesgosos, usar una rama y un pull request en lugar de `main`.
+
+**Validación en Windows (CI)**
+- **GitHub Actions** (`.github/workflows/pruebas.yml`) ejecuta `verificar_entorno.py` y `pytest` en `windows-latest` y `ubuntu-latest`, con Python 3.12, en cada push.
+- Sin minutos de cobro en repositorios públicos; con cuota mensual en privados.
+- **Estado al 13-11-2026:** 40/40 pruebas superadas en Windows Server 2025 con Python 3.12.10, VTK 9.7.2 y PySide6 6.12.0, con render offscreen correcto.
+- Límite del CI: no ejecuta los `.bat`/`.ps1` ni prueba la GPU, la interfaz interactiva real ni escaneos reales. Eso se verifica de forma manual en el equipo del propietario.
 
 **Herramientas para el propietario**
 - `INSTALAR.bat`, `EJECUTAR.bat` y `PROBAR.bat` en la raíz.
@@ -71,7 +83,7 @@ Estas decisiones ya fueron tomadas. Solo se pueden cambiar con una justificació
 
 **Agente de desarrollo recomendado**
 - Claude Code instalado de forma nativa en Windows (aplicación de escritorio o terminal) y abierto sobre la carpeta del repositorio. Así el agente ejecuta las pruebas en Windows directamente.
-- Instalar **Git for Windows**.
+- Instalar **Git for Windows** (permite clonar el repositorio y le da al agente la terminal Bash).
 - El agente debe leer `CLAUDE.md` al iniciar.
 
 **Empaquetado** (Fase 6, no antes)
@@ -81,6 +93,7 @@ Estas decisiones ya fueron tomadas. Solo se pueden cambiar con una justificació
 **Particularidades de Windows que el código debe respetar**
 - Usar `pathlib` siempre y nunca concatenar rutas con `/` o `\` a mano.
 - Abrir archivos de texto con `encoding="utf-8"` explícito.
+- La consola de Windows no usa UTF-8 por defecto (cp1252/cp850). Los scripts que imprimen texto con acentos deben reconfigurar `sys.stdout` a UTF-8, y los subprocesos se leen con la codificación declarada. Este error ya ocurrió una vez y quedó cubierto por una prueba.
 - Escritura atómica con `os.replace` y manejo de archivos bloqueados por antivirus u otros procesos (reintentar y dar un mensaje claro).
 - Los `.bat` y `.ps1` van sin acentos y con fin de línea CRLF.
 - Nada de `fork`: usar `multiprocessing` con `spawn` y protegido por `if __name__ == "__main__":`.
@@ -88,7 +101,15 @@ Estas decisiones ya fueron tomadas. Solo se pueden cambiar con una justificació
 
 ## 4. ESTADO DE PARTIDA (no reimplementar)
 
-**Fase 1 implementada** (`v0.1.0-fase1`), con 35 pruebas que pasan en Linux. **Falta verificarla en Windows** (pruebas de aceptación AC9 y AC10).
+**Fase 1 implementada** (`v0.1.0-fase1`), con **40 pruebas que pasan en Windows y Linux** (CI de GitHub). **Falta la verificación manual** en el equipo del propietario: instalación con `INSTALAR.bat`, la interfaz con un escaneo real anonimizado y el rendimiento (pruebas de aceptación AC9 y AC10).
+
+Soporte para Windows que ya existe:
+- `INSTALAR.bat`, `EJECUTAR.bat` y `PROBAR.bat`.
+- `scripts/verificar_entorno.py`.
+- Guardado con reintentos ante archivos bloqueados.
+- `.gitattributes` con CRLF para los scripts.
+- `CLAUDE.md` para agentes.
+- `docs/LICENCIAS.md`.
 
 Ya existe:
 - Importación de STL, PLY y OBJ con copia byte a byte verificada por SHA-256.
@@ -196,7 +217,8 @@ Espacios de trabajo por fase. Reglas:
 4. Ejecutar `pytest` en Windows y corregir hasta que pase. No declarar nada terminado sin esa evidencia.
 5. Actualizar `docs/ESTADO_PROYECTO.md` (estado, pruebas, errores conocidos, decisiones, próximas tareas) y `docs/LICENCIAS.md` si cambió alguna dependencia.
 6. Hacer commit en Git con un mensaje descriptivo. Una tarea por commit.
-7. Dar al propietario las instrucciones de verificación manual: pasos numerados con el resultado esperado.
+7. Con autorización del propietario, hacer `git push` y confirmar que el CI de GitHub Actions queda en verde en Windows. Si falla, revisar el registro del job y corregir antes de seguir.
+8. Dar al propietario las instrucciones de verificación manual: pasos numerados con el resultado esperado.
 
 **Prohibido:**
 - Dependencias o APIs inventadas.
@@ -237,13 +259,15 @@ Si algo no cabe en el presupuesto, explicarlo y proponer una versión simplifica
 
 ## 11. TAREA INMEDIATA
 
-1. Guiar al propietario para:
-   - Mover el repositorio a `C:\dev\ortosetup`.
+1. Guiar al propietario, paso a paso, para:
+   - Instalar Git for Windows.
+   - Clonar el repositorio con `git clone https://github.com/fmaldonadoar-rgb/ortosetup` dentro de `C:\dev`.
    - Ejecutar `INSTALAR.bat`.
-   - Compartir `reporte_entorno.txt` y el resultado de `pytest`.
-2. Corregir cualquier fallo que aparezca en Windows hasta que todas las pruebas pasen. Opcionalmente, crear un repositorio privado en GitHub para que CI confirme Windows de forma independiente.
-3. Hacer la verificación manual AC9 y AC10 con el caso sintético y con un escaneo real anonimizado.
-4. Completar los pendientes de la Fase 1 (sección 6).
-5. En paralelo, si el propietario lo aprueba: preparar la evaluación acotada de segmentación (instalar WSL2 + Ubuntu + driver CUDA para WSL, y Slicer 5.12).
+   - Compartir `reporte_entorno.txt` y lo que muestre la ventana.
+2. Corregir los fallos de `INSTALAR.bat`, `EJECUTAR.bat` o de la interfaz que solo aparezcan en su equipo (el CI ya cubre `pytest`).
+3. Hacer la verificación manual AC9 y AC10 con el caso sintético y con un escaneo real anonimizado: número de triángulos, tiempo de carga y fluidez.
+4. Pedir al propietario su decisión sobre la visibilidad del repositorio (público o privado) y registrarla en `docs/ESTADO_PROYECTO.md`.
+5. Completar los pendientes de la Fase 1 (sección 6).
+6. En paralelo, si el propietario lo aprueba: preparar la evaluación acotada de segmentación (instalar WSL2 + Ubuntu + driver CUDA para WSL, y Slicer 5.12).
 
 La responsabilidad es producir software real, comprobable en Windows y que pueda ampliarse paso a paso, con la supervisión del ortodoncista sobre toda decisión clínica.

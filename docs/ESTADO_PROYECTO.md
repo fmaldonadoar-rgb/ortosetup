@@ -44,6 +44,8 @@ numpy 2.5.3 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt · PySi
 - D2: la geometría es inmutable; la posición se guarda como un movimiento paramétrico absoluto, no como una matriz acumulada.
 - D3: formato de proyecto en carpeta con JSON legible, en lugar de SQLite, en la Fase 1 (más transparente y fácil de comparar). Se reevaluará si crecen las versiones o la segmentación por vértice.
 - D4: sin reescalado automático; solo advertencias.
+- D5: repositorio oficial https://github.com/fmaldonadoar-rgb/ortosetup (rama `main`), con CI en Windows y Linux. Visibilidad: pública. **Decisión pendiente del propietario** sobre pasarlo a privado.
+- D6: prompt maestro vigente: `docs/PROMPT_MAESTRO_v2.md` (versión 2.1).
 
 ## Próximas tareas
 (Hoja de ruta completa: `docs/PROMPT_MAESTRO_v2.md`, sección 6.)
