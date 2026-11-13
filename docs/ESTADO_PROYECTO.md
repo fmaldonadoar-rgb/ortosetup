@@ -16,11 +16,19 @@ numpy 2.5.3 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt · PySi
 - Interfaz: árbol de modelos con visibilidad y bloqueo, transparencia, vistas, posición inicial superpuesta, edición numérica.
 
 ## Pruebas
-`pytest` → **35 superadas** (núcleo 32 + escena/ventana 3, render offscreen).
+`pytest` → **40 superadas en Linux** (núcleo 32 + escena/ventana 3 con render offscreen + soporte de plataforma 5). **Aún no ejecutadas en Windows.**
+
+## Soporte para Windows (agregado en v2 del prompt)
+- `INSTALAR.bat` / `EJECUTAR.bat` / `PROBAR.bat` en la raíz; el instalador está en `scripts/windows/instalar.ps1` (verifica Python 3.12, crea `.venv`, instala, prueba, genera el caso sintético y el reporte).
+- `scripts/verificar_entorno.py` → `reporte_entorno.txt` (Python, paquetes, GPU/driver, WSL, render VTK, advertencias de ruta y OneDrive).
+- `.github/workflows/pruebas.yml`: CI en `windows-latest` y `ubuntu-latest` (sin ejecutar todavía; requiere subir el repositorio a GitHub).
+- Guardado con reintentos ante archivos bloqueados (antivirus/OneDrive) y mensaje claro.
+- `.gitattributes`: CRLF para `.bat`/`.ps1`. Los scripts de Windows se validan como ASCII en las pruebas.
+- **No probados en Windows real:** los `.bat`/`.ps1` (escritos sin poder ejecutarlos aquí). Son lo primero que hay que verificar.
 
 ## Verificación manual pendiente en Windows (AC9–AC10)
-1. Instalar según el README y ejecutar `pytest`.
-2. `python tools\make_synthetic_case.py caso` → abrir la app → crear un proyecto → importar `caso\upper_arch.stl` y los dientes de `caso\teeth`.
+1. Mover el repositorio a `C:\dev\ortosetup` → doble clic en `INSTALAR.bat` → debe terminar con "INSTALACION CORRECTA".
+2. `EJECUTAR.bat` → crear un proyecto → importar `caso_sintetico\upper_arch.stl` y los dientes de `caso_sintetico\teeth`.
 3. Mover el diente 11 (p. ej., 2 mm VL y 15° de rotación) → Guardar → cerrar → reabrir: los valores deben ser idénticos.
 4. Repetir con un escaneo real **anonimizado** y anotar el número de triángulos, el tiempo de carga y la fluidez.
 
@@ -38,6 +46,7 @@ numpy 2.5.3 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt · PySi
 - D4: sin reescalado automático; solo advertencias.
 
 ## Próximas tareas
-1. Verificación manual en Windows (AC9–AC10).
+(Hoja de ruta completa: `docs/PROMPT_MAESTRO_v2.md`, sección 6.)
+1. Verificación manual en Windows (AC9–AC10) y corrección de los fallos de instalación que aparezcan.
 2. Cierre de la Fase 1: versiones de tratamiento con nombre, movimiento de grupos, importación del registro de mordida y manipulador por arrastre (opcional; la entrada numérica ya cumple el criterio).
 3. Evaluación acotada de segmentación (Fase 2): instalar Slicer 5.12 y WSL2; probar DentalModelSeg, MeshSegNet y un modelo de 3DTeethSeg con escaneos anonimizados; registrar las licencias de código, pesos y datos.

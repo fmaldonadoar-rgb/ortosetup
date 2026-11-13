@@ -20,6 +20,7 @@ import json
 import os
 import shutil
 import tempfile
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,6 +44,22 @@ ARCH_IDS = ("upper", "lower")
 
 class ProjectIntegrityError(Exception):
     pass
+
+
+def _replace_with_retry(src: Path, dest: Path, attempts: int = 10, delay_s: float = 0.2) -> None:
+    """os.replace con reintentos: en Windows el antivirus, OneDrive o un visor
+    pueden tener el archivo abierto un instante y provocar PermissionError."""
+    for i in range(attempts):
+        try:
+            os.replace(src, dest)
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                raise PermissionError(
+                    f"No se pudo escribir {dest.name}: otro programa lo tiene abierto "
+                    "(antivirus, OneDrive, editor). Ciérrelo e intente de nuevo."
+                ) from None
+            time.sleep(delay_s)
 
 
 def _now() -> str:
@@ -270,7 +287,7 @@ class Project:
                 f.write(data)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp, self.root / PROJECT_FILE)
+            _replace_with_retry(Path(tmp), self.root / PROJECT_FILE)
         except BaseException:
             Path(tmp).unlink(missing_ok=True)
             raise

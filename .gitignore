@@ -7,3 +7,6 @@ caso/
 *.ply
 *.obj
 !tests/data/**
+
+reporte_entorno.txt
+caso_sintetico/
