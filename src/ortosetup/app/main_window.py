@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QInputDialog,
     QLabel,
     QMainWindow,
@@ -39,15 +40,33 @@ from .scene import Scene
 MESH_FILTER = "Mallas 3D (*.stl *.ply *.obj)"
 ARCH_LABEL = {"upper": "Arcada superior", "lower": "Arcada inferior"}
 
+# Nomenclatura (prompt maestro §8.3): mientras los ejes del diente no estén
+# aprobados por el ortodoncista, los controles se llaman "movimiento cartesiano
+# (ejes del archivo)". Los nombres clínicos (torque, angulación, rotación axial,
+# mesiodistal, vestibulolingual) quedan reservados para ejes aprobados, que aún
+# no existen en la Fase 1. Las claves internas (md_mm, ...) no cambian: son el
+# formato del proyecto (esquema 1).
 # (campo, etiqueta, unidad, rango, paso)
 MOVE_FIELDS = [
-    ("md_mm", "Mesiodistal (x, + mesial)", " mm", 20.0, 0.1),
-    ("vl_mm", "Vestibulolingual (y, + vestibular)", " mm", 20.0, 0.1),
-    ("oc_mm", "Extrusión(+)/intrusión(−) (z)", " mm", 20.0, 0.1),
-    ("rot_deg", "Rotación eje largo (z)", " °", 180.0, 0.5),
-    ("tip_deg", "Angulación (sobre y)", " °", 180.0, 0.5),
-    ("torque_deg", "Torque/inclinación (sobre x)", " °", 180.0, 0.5),
+    ("md_mm", "Traslación X", " mm", 20.0, 0.1),
+    ("vl_mm", "Traslación Y", " mm", 20.0, 0.1),
+    ("oc_mm", "Traslación Z", " mm", 20.0, 0.1),
+    ("rot_deg", "Rotación sobre Z", " °", 180.0, 0.5),
+    ("tip_deg", "Rotación sobre Y", " °", 180.0, 0.5),
+    ("torque_deg", "Rotación sobre X", " °", 180.0, 0.5),
 ]
+MOVE_LABEL = {key: label for key, label, *_ in MOVE_FIELDS}
+MOVE_GROUP_TITLE = "Movimiento cartesiano (ejes del archivo), respecto de la posición inicial"
+
+# Texto para el usuario según el origen del sistema de referencia del diente.
+FRAME_SOURCE_LABEL = {
+    "provisional_world_axes": "provisional (ejes del archivo)",
+    "provisional_world_axes_centroid": "provisional (ejes del archivo; pivote en el centroide del diente)",
+}
+
+
+def frame_source_label(source: str) -> str:
+    return FRAME_SOURCE_LABEL.get(source, source)
 
 
 class MainWindow(QMainWindow):
@@ -97,6 +116,14 @@ class MainWindow(QMainWindow):
         # ---------------- panel izquierdo: estructura
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["Modelo", "Bloq."])
+        # HiDPI: la columna del nombre ocupa todo el ancho disponible y la de
+        # bloqueo solo lo necesario; así el FDI no se trunca a "..." con escalado
+        # de pantalla al 125-200 % (defecto O1 detectado en AC9).
+        header = self.tree.header()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.tree.setTextElideMode(Qt.ElideNone)
         self.tree.itemChanged.connect(self._on_item_changed)
         self.tree.currentItemChanged.connect(self._on_current_changed)
         self.opacity = QSlider(Qt.Horizontal)
@@ -120,7 +147,7 @@ class MainWindow(QMainWindow):
         self.lbl_tooth = QLabel("Seleccione un diente")
         self.lbl_tooth.setStyleSheet("font-weight: bold; font-size: 14px")
         rv.addWidget(self.lbl_tooth)
-        box = QGroupBox("Movimiento respecto de la posición inicial (6 GDL)")
+        box = QGroupBox(MOVE_GROUP_TITLE)
         form = QFormLayout(box)
         self.spins: dict[str, QDoubleSpinBox] = {}
         for key, label, unit, rng, step in MOVE_FIELDS:
@@ -147,8 +174,10 @@ class MainWindow(QMainWindow):
         rv.addWidget(self.lbl_frame)
         note = QLabel(
             "<b>Ejes provisionales (Fase 1):</b> pivote = centroide de la malla del diente; "
-            "ejes = ejes del archivo. Los nombres clínicos solo son correctos si el "
-            "escaneo está orientado según esa convención. Ver docs/CONVENCIONES_EJES.md.<br>"
+            "ejes X/Y/Z = ejes del archivo importado. Por eso los movimientos se muestran "
+            "como cartesianos y no como torque, angulación o rotación axial: esos nombres "
+            "solo se usarán cuando el ortodoncista apruebe los ejes de cada diente. "
+            "Ver docs/CONVENCIONES_EJES.md.<br>"
             "<i>No disponibles aún:</i> segmentación IA, análisis, setup automático, staging, "
             "exportación, manipuladores 3D por arrastre."
         )
@@ -362,7 +391,8 @@ class MainWindow(QMainWindow):
         self._refresh_enabled()
         self.plotter.render()
         m = self.project.teeth[fdi].movement
-        self.info(f"Diente {fdi}: " + ", ".join(f"{k}={v:g}" for k, v in m.to_dict().items()))
+        self.info(f"Diente {fdi} (ejes del archivo): "
+                  + ", ".join(f"{MOVE_LABEL.get(k, k)} = {v:g}" for k, v in m.to_dict().items()))
 
     def _fill_spins(self, fdi: int) -> None:
         d = self.project.teeth[fdi].movement.to_dict()
@@ -379,7 +409,7 @@ class MainWindow(QMainWindow):
             t = self.project.teeth[fdi]
             self.lbl_tooth.setText(f"Diente {fdi} ({'bloqueado' if t.locked else 'editable'})")
             self._fill_spins(fdi)
-            self.lbl_frame.setText(f"Referencia: {t.frame.source}. Pivote (mm): "
+            self.lbl_frame.setText(f"Referencia: {frame_source_label(t.frame.source)}. Pivote (mm): "
                                    + ", ".join(f"{v:.2f}" for v in t.frame.origin))
             key = fdi
         else:

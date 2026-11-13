@@ -18,14 +18,16 @@ Este documento es normativo. Si el código y este documento discrepan, es un err
 - **Fase 1 (provisional):** `origin` = centroide de superficie de la malla del diente; ejes = ejes del archivo (`source = "provisional_world_axes_centroid"`). Por lo tanto, en la Fase 1 "mesiodistal" significa realmente "eje X del archivo". Los nombres clínicos solo serán correctos cuando la Fase 3 defina los ejes desde landmarks.
 
 ## Movimiento (`Movement6DOF`), absoluto respecto de la posición inicial
-| Campo | Tipo | Eje |
-|---|---|---|
-| `md_mm` | traslación | x |
-| `vl_mm` | traslación | y |
-| `oc_mm` | traslación (+ extrusión, − intrusión) | z |
-| `rot_deg` | rotación | z |
-| `tip_deg` | angulación | y |
-| `torque_deg` | inclinación | x |
+| Campo (formato del proyecto) | Tipo | Eje | Etiqueta en la interfaz con ejes provisionales | Nombre clínico (solo con ejes aprobados) |
+|---|---|---|---|---|
+| `md_mm` | traslación | x | Traslación X | mesiodistal |
+| `vl_mm` | traslación | y | Traslación Y | vestibulolingual |
+| `oc_mm` | traslación | z | Traslación Z | extrusión (+) / intrusión (−) |
+| `rot_deg` | rotación | z | Rotación sobre Z | rotación axial |
+| `tip_deg` | rotación | y | Rotación sobre Y | angulación (tip) |
+| `torque_deg` | rotación | x | Rotación sobre X | inclinación (torque) |
+
+- **Nomenclatura (prompt maestro §8.3):** mientras los ejes del diente no estén aprobados por el ortodoncista, la interfaz muestra el grupo como "Movimiento cartesiano (ejes del archivo)" y usa solo las etiquetas cartesianas. Los nombres de los campos internos no cambian porque son el formato del proyecto (esquema 1).
 
 - Signo de las rotaciones: **regla de la mano derecha** sobre el eje local.
 - Orden: `L = T · Rz(rot) · Ry(tip) · Rx(torque)`; en coordenadas de escaneo, `W = F · L · F⁻¹`.
