@@ -53,7 +53,7 @@ def test_save_gives_clear_error_when_permanently_locked(tmp_path, monkeypatch):
 
 def test_environment_report_runs(tmp_path):
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "verificar_entorno.py")],
-                       capture_output=True, text=True, encoding="utf-8", timeout=120)
+                       capture_output=True, text=True, encoding="utf-8", errors="strict", timeout=120)
     assert r.returncode == 0, r.stderr
     report = (ROOT / "reporte_entorno.txt").read_text(encoding="utf-8")
     assert "Python:" in report and "ADVERTENCIAS" in report

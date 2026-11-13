@@ -16,7 +16,7 @@ numpy 2.5.3 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt · PySi
 - Interfaz: árbol de modelos con visibilidad y bloqueo, transparencia, vistas, posición inicial superpuesta, edición numérica.
 
 ## Pruebas
-`pytest` → **40 superadas en Linux** (núcleo 32 + escena/ventana 3 con render offscreen + soporte de plataforma 5). **Aún no ejecutadas en Windows.**
+`pytest` → **40 superadas en Linux y en Windows** (GitHub Actions, windows-latest, Python 3.12.10, 13-11-2026): núcleo 32 + escena/ventana 3 con render offscreen + soporte de plataforma 5. Pendiente: verificación manual en el equipo del propietario y ejecución real de los .bat/.ps1 (CI no los ejecuta).
 
 ## Soporte para Windows (agregado en v2 del prompt)
 - `INSTALAR.bat` / `EJECUTAR.bat` / `PROBAR.bat` en la raíz; el instalador está en `scripts/windows/instalar.ps1` (verifica Python 3.12, crea `.venv`, instala, prueba, genera el caso sintético y el reporte).

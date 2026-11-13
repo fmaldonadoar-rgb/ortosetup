@@ -114,6 +114,13 @@ def check_render(lines: list[str], warnings: list[str]) -> None:
 
 
 def main() -> int:
+    # En Windows la consola usa cp1252/cp850: forzamos UTF-8 para que los acentos
+    # se vean bien y no fallen los programas que leen esta salida.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     lines: list[str] = [
         "REPORTE DE ENTORNO - OrtoSetup",
         f"Sistema: {platform.platform()} | Máquina: {platform.machine()}",
