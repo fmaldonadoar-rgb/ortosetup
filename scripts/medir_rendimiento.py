@@ -98,9 +98,15 @@ def memoria_maxima_mb() -> float | None:
             pmc.cb = ctypes.sizeof(PMC)
             k32 = ctypes.WinDLL("kernel32", use_last_error=True)
             k32.GetCurrentProcess.restype = wintypes.HANDLE
-            psapi = ctypes.WinDLL("psapi", use_last_error=True)
-            ok = psapi.GetProcessMemoryInfo(k32.GetCurrentProcess(), ctypes.byref(pmc),
-                                            pmc.cb)
+            k32.GetCurrentProcess.argtypes = []
+            # Sin argtypes, ctypes convierte el pseudo-handle (-1, 64 bits) a int de
+            # 32 bits y falla (detectado en AC10: "Memoria maxima: no disponible").
+            fn = getattr(k32, "K32GetProcessMemoryInfo", None)
+            if fn is None:
+                fn = ctypes.WinDLL("psapi", use_last_error=True).GetProcessMemoryInfo
+            fn.argtypes = [wintypes.HANDLE, ctypes.POINTER(PMC), wintypes.DWORD]
+            fn.restype = wintypes.BOOL
+            ok = fn(k32.GetCurrentProcess(), ctypes.byref(pmc), pmc.cb)
             return pmc.PeakWorkingSetSize / 2**20 if ok else None
         import resource
         kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
@@ -143,6 +149,8 @@ class Resultado:
     lineas: list[str] = field(default_factory=list)
     fps: float | None = None
     render_valido: bool = False
+    preparacion_s: float = 0.0
+    primer_dibujo_s: float = 0.0
     carga_s: float | None = None
 
     def add(self, texto: str) -> None:
@@ -173,6 +181,7 @@ def medir(mesh, res: Resultado, frames: int, ancho: int, alto: int) -> None:
     t1 = time.perf_counter()
     img = pl.screenshot(return_img=True)   # primer dibujo real (render() no dibuja antes)
     t2 = time.perf_counter()
+    res.preparacion_s, res.primer_dibujo_s = t1 - t0, t2 - t1
     res.add(f"Preparacion para visualizar (conversion + normales): {t1 - t0:.2f} s")
     res.add(f"Primer dibujo: {t2 - t1:.2f} s")
 
@@ -245,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         t1 = time.perf_counter()
         rep = check_geometry(mesh, "arch")
         t2 = time.perf_counter()
-        res.carga_s = t1 - t0
+        lectura_diag_s = t2 - t0
         res.add(f"Lectura del archivo: {t1 - t0:.2f} s | diagnostico geometrico: {t2 - t1:.2f} s")
         n_adv = len(rep.warnings) if hasattr(rep, "warnings") else len(rep.get("warnings", []))
         res.add(f"Advertencias geometricas: {n_adv}")
@@ -254,6 +263,11 @@ def main(argv: list[str] | None = None) -> int:
         res.add(f"Origen: malla sintetica (~{args.sintetico:,} triangulos pedidos)".replace(",", "."))
 
     medir(mesh, res, args.cuadros, args.ancho, args.alto)
+    if args.archivo:
+        # Carga = lo que espera el usuario hasta ver la arcada: lectura + diagnóstico
+        # + preparación + primer dibujo (antes solo se contaba la lectura).
+        res.carga_s = lectura_diag_s + res.preparacion_s + res.primer_dibujo_s
+        res.add(f"Carga total hasta ver la arcada: {res.carga_s:.2f} s")
     mem = memoria_maxima_mb()
     res.add(f"Memoria maxima del proceso: {mem:.0f} MB" if mem else "Memoria maxima: no disponible")
 
