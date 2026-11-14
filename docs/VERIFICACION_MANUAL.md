@@ -48,5 +48,14 @@ Evidencia de aceptación en el equipo del propietario (prompt maestro §16). Cad
 | 4 | Seleccionar diente 11 | "Movimiento cartesiano (ejes del archivo)"; Traslación Y = 2,000 mm; Rotación sobre Z = 15,000 ° | OK (O2 resuelto; el proyecto de esquema 1 se abre sin cambios) |
 | 5 | Línea de referencia | Texto en lenguaje claro | OK: "provisional (ejes del archivo; pivote en el centroide del diente)" (O4 resuelto) |
 
-## Pendiente
-- AC10: rendimiento con un escaneo representativo, autorizado y desidentificado (o con malla sintética de tamaño real según §9.1). Medir FPS con un método objetivo.
+## AC10 — Rendimiento con escaneo real
+
+**Resultado: PENDIENTE.** Escaneo de la propia boca del propietario (ver `docs/DATOS.md`). Herramienta: `MEDIR_RENDIMIENTO.bat` (rama `ac10-medicion`).
+
+Pasos:
+1. Copiar el escaneo a `C:\dev\datos_ac10\ac10_superior.stl` (fuera del repositorio, con nombre neutro).
+2. `MEDIR_RENDIMIENTO.bat "C:\dev\datos_ac10\ac10_superior.stl"` y, como referencia, `MEDIR_RENDIMIENTO.bat` sin archivo (malla sintética de 500.000 triángulos).
+3. Abrir el escaneo en `EJECUTAR.bat` (proyecto nuevo, importar arcada) y rotar: confirmar la fluidez a ojo.
+4. Registrar aquí el contenido de `rendimiento_ac10.txt` (no contiene nombre, ruta ni cabecera).
+
+Metas iniciales (§9.5): ≥ 30 FPS al rotar; carga < 10 s por arcada.

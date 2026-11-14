@@ -20,11 +20,11 @@ Windows 11 (10.0.26300), Intel con 32 CPUs, **NVIDIA RTX 4080 Laptop GPU, 12 GB*
 - Interfaz: árbol de modelos con visibilidad y bloqueo, transparencia, vistas, posición inicial superpuesta, edición numérica.
 
 ## Pruebas
-`pytest` → **40 superadas** en GitHub Actions (Windows y Linux) **y en el equipo del propietario** (47,7 s, 13-11-2026, commit `bf11790`). Desde el PR #1: **44 superadas** en Linux y en el CI (Windows y Linux).
+`pytest` → **40 superadas** en GitHub Actions (Windows y Linux) **y en el equipo del propietario** (47,7 s, 13-11-2026, commit `bf11790`). Desde el PR #1: **44 superadas** en Linux y en el CI (Windows y Linux). Rama `ac10-medicion`: **46** (2 nuevas: cabecera STL y reporte sin datos identificables).
 
 ## Verificación manual en Windows
 - **AC9: ACEPTADO CON OBSERVACIONES** (13-11-2026, commit `bf11790`). Evidencia en `VERIFICACION_MANUAL.md`. `INSTALAR.bat`, `EJECUTAR.bat`, la creación del proyecto en una ruta con espacio, la importación, el movimiento, el guardado y la reapertura verificada por SHA-256 funcionan en el equipo real.
-- **AC10: pendiente.** Rendimiento con un escaneo real desidentificado o, si no hay, con una malla sintética de tamaño real (§9.1). Medir FPS con un método objetivo.
+- **AC10: en curso.** Escaneo: el de la propia boca del propietario (STL), documentado en `docs/DATOS.md`. Herramienta: `MEDIR_RENDIMIENTO.bat` / `scripts/medir_rendimiento.py` (rama `ac10-medicion`). Mide lectura, preparación, primer dibujo, FPS offscreen sincronizado con la GPU, memoria máxima y la GPU que usa VTK. El reporte no contiene datos identificables.
 
 ## Defectos de AC9
 - **O1 (HiDPI): corregido y aceptado en Windows (PR #1).** La columna "Modelo" del árbol se estira y ya no recorta el FDI.
@@ -56,6 +56,9 @@ Windows 11 (10.0.26300), Intel con 32 CPUs, **NVIDIA RTX 4080 Laptop GPU, 12 GB*
 - El esquema 1 no tiene `T_proyecto_desde_escaneo` ni matrices como fuente de verdad → esquema 2 (§8.1, §8.2).
 - `Project.save` es atómico para un solo archivo, pero no hay manifiesto para migraciones de varios archivos (regla 7.18).
 - Verificar si `Project.save` hace `fsync` antes de `os.replace`, y si `Project.load` rechaza `schema_version` futuras (regla 7.18).
+
+## Datos
+- `docs/DATOS.md`: estado de la Ley 21.719 (vigente desde el 1-12-2026, salvo que se apruebe la postergación en trámite; consulta del 13-11-2026), origen y tratamiento del escaneo de AC10. Escaneos de terceros: no autorizados aún.
 
 ## Próximas tareas
 (Orden obligatorio: `docs/PROMPT_MAESTRO_v2.md`, §21.)
