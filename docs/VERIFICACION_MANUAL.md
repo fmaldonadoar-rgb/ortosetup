@@ -36,15 +36,17 @@ Evidencia de aceptación en el equipo del propietario (prompt maestro §16). Cad
 - **O5 (menor):** `verificar_entorno.py` espera 20 s a `wsl -l -v` aunque WSL no está instalado.
 - **O6 (reproducibilidad):** dependencias sin versión fijada (numpy 2.5.4 local vs 2.5.3 en CI).
 
-## Correcciones O1, O2, O4, O5 (rama `correcciones-ac9`)
+## Correcciones O1, O2, O4, O5 (rama `correcciones-ac9`, commit `bd39365`, PR #1)
 
-**Resultado: PENDIENTE de verificación en Windows.** Verificado automáticamente en Linux (44 pruebas); falta el CI y el equipo del propietario.
+**Resultado: ACEPTADO** (13-11-2026). Mismo equipo y caso que AC9. Verificó: propietario, guiado por Claude.
 
-Pasos de verificación manual:
-1. `git pull` y `PROBAR.bat` → 44 pruebas superadas; el reporte no debe esperar 20 s en la sección de WSL.
-2. `EJECUTAR.bat` → abrir `C:\dev\prueba proyecto` → la lista muestra los números 11–17 y 21–27 completos.
-3. Seleccionar el diente 11 → el panel dice "Movimiento cartesiano (ejes del archivo)" y "Traslación Y = 2,000 mm", "Rotación sobre Z = 15,000 °" (mismos valores que en AC9: el formato del proyecto no cambió).
-4. La línea de referencia dice "provisional (ejes del archivo; pivote en el centroide del diente)".
+| # | Paso | Esperado | Obtenido |
+|---|---|---|---|
+| 1 | `git switch correcciones-ac9` y `PROBAR.bat` | Reporte sin espera de 20 s en WSL | OK: "WSL distribuciones: (omitido: WSL no está instalado...)". El conteo local de pytest no fue informado; el CI en `windows-latest` y `ubuntu-latest` pasó las 44 pruebas. |
+| 2 | `EJECUTAR.bat` → abrir `C:\dev\prueba proyecto` | Mensaje de verificación SHA-256 | OK |
+| 3 | Lista de dientes | FDI 11–17 y 21–27 completos | OK (O1 resuelto) |
+| 4 | Seleccionar diente 11 | "Movimiento cartesiano (ejes del archivo)"; Traslación Y = 2,000 mm; Rotación sobre Z = 15,000 ° | OK (O2 resuelto; el proyecto de esquema 1 se abre sin cambios) |
+| 5 | Línea de referencia | Texto en lenguaje claro | OK: "provisional (ejes del archivo; pivote en el centroide del diente)" (O4 resuelto) |
 
 ## Pendiente
 - AC10: rendimiento con un escaneo representativo, autorizado y desidentificado (o con malla sintética de tamaño real según §9.1). Medir FPS con un método objetivo.
