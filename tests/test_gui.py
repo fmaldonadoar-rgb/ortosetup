@@ -134,3 +134,20 @@ def test_tree_name_column_stretches_for_hidpi(project):
     assert teeth_root.childCount() == len(project.teeth)
     w.dirty = False
     w.close()
+
+
+def test_scene_keeps_lighting_after_loading(project):
+    """Defecto de AC10: Scene.clear() dejaba la escena sin luces (silueta plana)."""
+    pl = pv.Plotter(off_screen=True, window_size=(400, 300))
+    sc = Scene(pl)
+    sc.load_project(project)
+    sc.load_project(project)  # reabrir también debe conservar la iluminación
+    assert len(pl.renderer.lights) > 0
+    for actor in sc.tooth_actors.values():
+        actor.SetVisibility(False)
+    img = pl.screenshot(return_img=True).astype(float)
+    pl.close()
+    arcada = img[(img < 250).any(axis=2)]  # píxeles que no son fondo blanco
+    assert len(arcada) > 100
+    # con luces hay relieve: la luminancia de la arcada varía; sin luces es uniforme
+    assert arcada.mean(axis=1).std() > 5

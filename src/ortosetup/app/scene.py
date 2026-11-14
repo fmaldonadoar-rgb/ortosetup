@@ -53,6 +53,11 @@ class Scene:
 
     def clear(self) -> None:
         self.plotter.clear()
+        # plotter.clear() también elimina las luces: sin ellas la malla se ve como
+        # una silueta plana, sin relieve (defecto detectado con un escaneo real en
+        # AC10). Se restaura la iluminación estándar de PyVista.
+        if len(self.plotter.renderer.lights) == 0:
+            self.plotter.enable_lightkit()
         self.arch_actors.clear()
         self.tooth_actors.clear()
         self.ghost_actors.clear()
