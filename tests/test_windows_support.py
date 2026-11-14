@@ -63,3 +63,23 @@ def test_windows_scripts_are_ascii():
     # PowerShell 5.1 interpreta mal UTF-8 sin BOM; cmd.exe tampoco maneja bien acentos.
     for f in list(ROOT.glob("*.bat")) + list((ROOT / "scripts" / "windows").glob("*.ps1")):
         f.read_bytes().decode("ascii")
+
+
+def _load_verificar_entorno():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("verificar_entorno",
+                                                  ROOT / "scripts" / "verificar_entorno.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_wsl_not_installed_skips_distribution_query():
+    """Defecto O5 (AC9): sin WSL no se consulta 'wsl -l -v' (esperaba 20 s)."""
+    ve = _load_verificar_entorno()
+    msg_es = ('El Subsistema de Windows para Linux no está instalado. '
+              'Para instalar, ejecute "wsl.exe --install".')
+    assert not ve.wsl_installed(0, msg_es)
+    assert not ve.wsl_installed(1, msg_es)
+    assert not ve.wsl_installed(-1, "(no encontrado: wsl)")
+    assert ve.wsl_installed(0, "Distribución predeterminada: Ubuntu\nVersión predeterminada: 2")

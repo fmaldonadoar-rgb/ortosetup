@@ -80,3 +80,57 @@ def test_main_window_end_to_end(project):
     assert reopened.teeth[11].movement == Movement6DOF(md_mm=0.75, torque_deg=-6.5)
     w.dirty = False
     w.close()
+
+
+CLINICAL_TERMS = ("torque", "angulaci", "tip", "rotación eje", "rotación axial",
+                  "mesiodistal", "vestibulolingual", "inclinaci", "extrusi", "intrusi")
+
+
+def test_movement_labels_are_cartesian_while_axes_are_provisional():
+    """Defecto O2 (AC9) y prompt maestro §8.3: sin ejes aprobados no hay nombres clínicos."""
+    pytest.importorskip("PySide6.QtWidgets")
+    from ortosetup.app import main_window as mw
+
+    texts = [label for _, label, *_ in mw.MOVE_FIELDS] + [mw.MOVE_GROUP_TITLE]
+    for text in texts:
+        low = text.lower()
+        assert not any(term in low for term in CLINICAL_TERMS), text
+    assert "movimiento cartesiano (ejes del archivo)" in mw.MOVE_GROUP_TITLE.lower()
+    # las claves internas (formato del proyecto, esquema 1) no cambian
+    assert [k for k, *_ in mw.MOVE_FIELDS] == ["md_mm", "vl_mm", "oc_mm",
+                                               "rot_deg", "tip_deg", "torque_deg"]
+
+
+def test_frame_source_shown_in_plain_language():
+    """Defecto O4 (AC9): no mostrar identificadores internos al usuario."""
+    pytest.importorskip("PySide6.QtWidgets")
+    from ortosetup.app.main_window import frame_source_label
+
+    label = frame_source_label("provisional_world_axes_centroid")
+    assert "_" not in label and "provisional" in label
+    assert frame_source_label("otro_origen") == "otro_origen"
+
+
+def test_tree_name_column_stretches_for_hidpi(project):
+    """Defecto O1 (AC9): el FDI no debe truncarse a '...' con escalado de pantalla."""
+    qt = pytest.importorskip("PySide6.QtWidgets")
+    app = qt.QApplication.instance() or qt.QApplication([])
+    from PySide6.QtCore import Qt
+    from ortosetup.app.main_window import MainWindow
+
+    w = MainWindow(plotter_factory=lambda parent: pv.Plotter(off_screen=True))
+    header = w.tree.header()
+    assert header.sectionResizeMode(0) == qt.QHeaderView.Stretch
+    assert header.sectionResizeMode(1) == qt.QHeaderView.ResizeToContents
+    assert not header.stretchLastSection()
+    assert w.tree.textElideMode() == Qt.ElideNone
+    w.open_project(str(project.root))
+    w.resize(1400, 850)
+    w.show()
+    app.processEvents()
+    teeth_root = w.tree.topLevelItem(w.tree.topLevelItemCount() - 1)
+    needed = max(w.tree.sizeHintForColumn(0), 1)
+    assert w.tree.columnWidth(0) >= needed
+    assert teeth_root.childCount() == len(project.teeth)
+    w.dirty = False
+    w.close()

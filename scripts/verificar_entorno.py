@@ -92,8 +92,22 @@ def check_gpu_and_wsl(lines: list[str], warnings: list[str]) -> None:
     if platform.system() == "Windows":
         code, out = run(["wsl", "--status"])
         lines.append("WSL --status:\n    " + out.replace("\n", "\n    "))
-        code, out = run(["wsl", "-l", "-v"])
-        lines.append("WSL distribuciones:\n    " + out.replace("\n", "\n    "))
+        if wsl_installed(code, out):
+            code, out = run(["wsl", "-l", "-v"])
+            lines.append("WSL distribuciones:\n    " + out.replace("\n", "\n    "))
+        else:
+            # Sin WSL, "wsl -l -v" se queda esperando hasta el timeout (defecto O5, AC9).
+            lines.append("WSL distribuciones: (omitido: WSL no está instalado; "
+                         "solo se necesita a partir de la Fase 2)")
+
+
+def wsl_installed(code: int, status_output: str) -> bool:
+    """Decide si vale la pena consultar las distribuciones de WSL."""
+    text = status_output.lower()
+    if code != 0:
+        return False
+    return not any(s in text for s in ("no está instalado", "no esta instalado",
+                                       "not installed", "wsl.exe --install"))
 
 
 def check_render(lines: list[str], warnings: list[str]) -> None:

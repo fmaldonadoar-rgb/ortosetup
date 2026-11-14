@@ -1,12 +1,16 @@
 # Estado del proyecto (actualizar en cada sesión)
 
-Última actualización: 13-11-2026 · Versión: 0.1.0-fase1 · Fase actual: **1 (núcleo 3D), implementada y pendiente de verificación en Windows**
+Última actualización: 13-11-2026 · Versión: 0.1.0-fase1 · Fase actual: **1 (núcleo 3D). AC9 aceptado en Windows con observaciones; AC10 pendiente.**
 
 ## Arquitectura actual
 Núcleo Python puro (`ortosetup.core`) + interfaz PySide6/PyVista (`ortosetup.app`). Detalle en `AUDITORIA_VIABILIDAD.md` §2 y §5.
 
-## Dependencias (probadas en Linux, Python 3.13)
-numpy 2.5.3 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt · PySide6 6.12.0 · pytest. Recomendado en Windows: Python 3.12 de 64 bits.
+## Dependencias
+- CI y Linux: numpy 2.5.3 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt · PySide6 6.12.0 · pytest.
+- Equipo del propietario (13-11-2026): numpy 2.5.4 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt 0.13.2 · PySide6 6.12.0 · pytest 9.2.0. Las versiones no están fijadas (ver O6).
+
+## Equipo del propietario
+Windows 11 (10.0.26300), Intel con 32 CPUs, **NVIDIA RTX 4080 Laptop GPU, 12 GB** (driver 617.14). Corregido en el prompt 2.5.1 (§3). Python 3.12.10 instalado con winget. WSL no instalado.
 
 ## Funciones implementadas (con pruebas)
 - Importación STL/PLY/OBJ de arcadas y de dientes segmentados (FDI validado); copia íntegra con SHA-256.
@@ -16,25 +20,23 @@ numpy 2.5.3 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt · PySi
 - Interfaz: árbol de modelos con visibilidad y bloqueo, transparencia, vistas, posición inicial superpuesta, edición numérica.
 
 ## Pruebas
-`pytest` → **40 superadas en Linux y en Windows** (GitHub Actions, windows-latest, Python 3.12.10, 13-11-2026): núcleo 32 + escena/ventana 3 con render offscreen + soporte de plataforma 5. Pendiente: verificación manual en el equipo del propietario y ejecución real de los .bat/.ps1 (CI no los ejecuta).
+`pytest` → **40 superadas** en GitHub Actions (Windows y Linux) **y en el equipo del propietario** (47,7 s, 13-11-2026, commit `bf11790`). Desde el PR #1: **44 superadas** en Linux y en el CI (Windows y Linux).
 
-## Soporte para Windows (agregado en v2 del prompt)
-- `INSTALAR.bat` / `EJECUTAR.bat` / `PROBAR.bat` en la raíz; el instalador está en `scripts/windows/instalar.ps1` (verifica Python 3.12, crea `.venv`, instala, prueba, genera el caso sintético y el reporte).
-- `scripts/verificar_entorno.py` → `reporte_entorno.txt` (Python, paquetes, GPU/driver, WSL, render VTK, advertencias de ruta y OneDrive).
-- `.github/workflows/pruebas.yml`: CI en `windows-latest` y `ubuntu-latest` (sin ejecutar todavía; requiere subir el repositorio a GitHub).
-- Guardado con reintentos ante archivos bloqueados (antivirus/OneDrive) y mensaje claro.
-- `.gitattributes`: CRLF para `.bat`/`.ps1`. Los scripts de Windows se validan como ASCII en las pruebas.
-- **No probados en Windows real:** los `.bat`/`.ps1` (escritos sin poder ejecutarlos aquí). Son lo primero que hay que verificar.
+## Verificación manual en Windows
+- **AC9: ACEPTADO CON OBSERVACIONES** (13-11-2026, commit `bf11790`). Evidencia en `VERIFICACION_MANUAL.md`. `INSTALAR.bat`, `EJECUTAR.bat`, la creación del proyecto en una ruta con espacio, la importación, el movimiento, el guardado y la reapertura verificada por SHA-256 funcionan en el equipo real.
+- **AC10: pendiente.** Rendimiento con un escaneo real desidentificado o, si no hay, con una malla sintética de tamaño real (§9.1). Medir FPS con un método objetivo.
 
-## Verificación manual pendiente en Windows (AC9–AC10)
-1. Mover el repositorio a `C:\dev\ortosetup` → doble clic en `INSTALAR.bat` → debe terminar con "INSTALACION CORRECTA".
-2. `EJECUTAR.bat` → crear un proyecto → importar `caso_sintetico\upper_arch.stl` y los dientes de `caso_sintetico\teeth`.
-3. Mover el diente 11 (p. ej., 2 mm VL y 15° de rotación) → Guardar → cerrar → reabrir: los valores deben ser idénticos.
-4. Repetir con un escaneo real **anonimizado** y anotar el número de triángulos, el tiempo de carga y la fluidez.
+## Defectos de AC9
+- **O1 (HiDPI): corregido y aceptado en Windows (PR #1).** La columna "Modelo" del árbol se estira y ya no recorta el FDI.
+- **O2: corregido y aceptado en Windows (PR #1).** Los controles dicen "Movimiento cartesiano (ejes del archivo)", Traslación X/Y/Z y Rotación sobre X/Y/Z.
+- **O3:** *z-fighting* entre la arcada sintética (con coronas) y los dientes. Limitación del caso sintético; mitigable con transparencia por defecto de la arcada al haber dientes segmentados.
+- **O4: corregido y aceptado en Windows (PR #1).** El origen de los ejes se muestra en lenguaje claro.
+- **O5: corregido y aceptado en Windows (PR #1).** `verificar_entorno.py` omite `wsl -l -v` si WSL no está instalado.
+- **O6:** dependencias sin versión fijada (reproducibilidad).
 
 ## Errores y limitaciones conocidos
 - Ejes por diente provisionales (ejes del archivo). Las vistas "oclusal/frontal/lateral" también son relativas a los ejes del archivo.
-- La arcada importada incluye los dientes: al mover un diente segmentado, la arcada sigue mostrando la corona en su lugar original (conviene ocultar la arcada o usar transparencia). Se resolverá con la segmentación (Fase 2), al separar la encía de las coronas.
+- La arcada importada incluye los dientes: al mover un diente segmentado, la arcada sigue mostrando la corona en su lugar original. Se resolverá con la segmentación (Fase 2).
 - Sin manipuladores por arrastre, sin movimiento de grupos ni versiones de tratamiento.
 - Sin importación de registro de mordida.
 - Las mallas de alta resolución se dibujan completas (sin reducción): el rendimiento no está medido.
@@ -42,13 +44,21 @@ numpy 2.5.3 · trimesh 5.2.1 · vtk 9.7.2 · pyvista 0.49.2 · pyvistaqt · PySi
 ## Decisiones técnicas
 - D1: núcleo independiente de la interfaz y de Slicer (ver la auditoría).
 - D2: la geometría es inmutable; la posición se guarda como un movimiento paramétrico absoluto, no como una matriz acumulada.
-- D3: formato de proyecto en carpeta con JSON legible, en lugar de SQLite, en la Fase 1 (más transparente y fácil de comparar). Se reevaluará si crecen las versiones o la segmentación por vértice.
+- D3: formato de proyecto en carpeta con JSON legible, en lugar de SQLite, en la Fase 1. Se reevaluará si crecen las versiones o la segmentación por vértice.
 - D4: sin reescalado automático; solo advertencias.
 - D5: repositorio oficial https://github.com/fmaldonadoar-rgb/ortosetup (rama `main`), con CI en Windows y Linux. Visibilidad: pública. **Decisión pendiente del propietario** sobre pasarlo a privado.
-- D6: prompt maestro vigente: `docs/PROMPT_MAESTRO_v2.md` (versión 2.1).
+- D6: prompt maestro vigente: `docs/PROMPT_MAESTRO_v2.md` (versión 2.5.1, 13-11-2026). **Prompt congelado** salvo correcciones factuales. Sincronizado en `main` mediante el PR #1 (antes, `main` tenía el prompt 2.1).
+- D7 (**propuesta en v2.5, pendiente de confirmación del propietario**): en el esquema 2 la fuente de verdad pasa de los 6 parámetros a las matrices `M` y `F`, con `T_proyecto_desde_escaneo` por escaneo y migración transaccional con manifiesto.
+- D8 (13-11-2026): F se define sobre la pose inicial P0; L y sus parámetros expresan el movimiento total desde la posición inicial, en los ejes iniciales del diente (§8.1).
+
+## Brechas de modelo de datos y seguridad
+- `Project.load` no valida que `original.rel_path` quede dentro de la carpeta del proyecto → política de rutas del §18.
+- El esquema 1 no tiene `T_proyecto_desde_escaneo` ni matrices como fuente de verdad → esquema 2 (§8.1, §8.2).
+- `Project.save` es atómico para un solo archivo, pero no hay manifiesto para migraciones de varios archivos (regla 7.18).
+- Verificar si `Project.save` hace `fsync` antes de `os.replace`, y si `Project.load` rechaza `schema_version` futuras (regla 7.18).
 
 ## Próximas tareas
-(Hoja de ruta completa: `docs/PROMPT_MAESTRO_v2.md`, sección 6.)
-1. Verificación manual en Windows (AC9–AC10) y corrección de los fallos de instalación que aparezcan.
-2. Cierre de la Fase 1: versiones de tratamiento con nombre, movimiento de grupos, importación del registro de mordida y manipulador por arrastre (opcional; la entrada numérica ya cumple el criterio).
-3. Evaluación acotada de segmentación (Fase 2): instalar Slicer 5.12 y WSL2; probar DentalModelSeg, MeshSegNet y un modelo de 3DTeethSeg con escaneos anonimizados; registrar las licencias de código, pesos y datos.
+(Orden obligatorio: `docs/PROMPT_MAESTRO_v2.md`, §21.)
+1. AC10: medición de rendimiento (escaneo desidentificado o malla sintética de tamaño real).
+2. Esquema 2 con versiones del setup y migrador transaccional desde el esquema 1.
+3. Pruebas de robustez y política de rutas (§16, §18).
