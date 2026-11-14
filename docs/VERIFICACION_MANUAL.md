@@ -48,5 +48,29 @@ Evidencia de aceptación en el equipo del propietario (prompt maestro §16). Cad
 | 4 | Seleccionar diente 11 | "Movimiento cartesiano (ejes del archivo)"; Traslación Y = 2,000 mm; Rotación sobre Z = 15,000 ° | OK (O2 resuelto; el proyecto de esquema 1 se abre sin cambios) |
 | 5 | Línea de referencia | Texto en lenguaje claro | OK: "provisional (ejes del archivo; pivote en el centroide del diente)" (O4 resuelto) |
 
-## Pendiente
-- AC10: rendimiento con un escaneo representativo, autorizado y desidentificado (o con malla sintética de tamaño real según §9.1). Medir FPS con un método objetivo.
+## AC10 — Rendimiento con escaneo real
+
+**Resultado: ACEPTADO** (13-11-2026). Rama `ac10-medicion` (commit `be8728e`, PR #2). Verificó: propietario, guiado por Claude.
+
+| Campo | Valor |
+|---|---|
+| Caso | Escaneo intraoral de la **propia boca del propietario** (arcada superior), STL binario de 10,0 MB. Ver `docs/DATOS.md`. |
+| Cabecera STL | Contiene solo "3Shape" (marca del escáner); sin datos personales. |
+| Malla | 209.238 triángulos; 627.714 vértices (STL sin vértices unidos: 3 por triángulo). 1 advertencia geométrica: superficie abierta (2.054 aristas de borde), habitual en escaneos intraorales. |
+| Herramienta | `MEDIR_RENDIMIENTO.bat` (render offscreen a 1600x1000, 180 cuadros, sincronizado con la GPU). |
+
+| Métrica | GPU Intel integrada (por defecto de Windows) | GPU NVIDIA RTX 4080 Laptop (configurada) | Meta §9.5 |
+|---|---|---|---|
+| Lectura + diagnóstico | 0,10 + 0,53 s | 0,10 + 0,53 s | — |
+| Preparación para visualizar | 4,02 s (arranque en frío) | 0,60 s | — |
+| Carga total hasta ver la arcada | ≈ 4,8 s (calculada a mano; la versión inicial de la herramienta solo medía la lectura) | 1,35 s | < 10 s: **cumple** |
+| FPS al rotar (mediana) | 134,8 (p95: 121) | ≈ 2.900 (sobre el límite de resolución de la medición) | ≥ 30: **cumple** |
+| Memoria máxima del proceso | no medida (defecto de la herramienta, corregido) | 389 MB | — |
+
+Fluidez en la ventana interactiva (a ojo): **buena**.
+
+**Hallazgos de AC10:**
+- **O7 (defecto, corregido y aceptado):** `Scene.clear()` eliminaba las luces (`plotter.clear()` de PyVista también las borra). Todas las mallas se veían como siluetas planas, sin relieve; afectaba también a AC9. Verificado con captura del escaneo real: relieve visible.
+- **O8 (configuración del equipo):** Windows ejecutaba Python con la GPU Intel integrada. Se configuró "Alto rendimiento" para `C:\dev\ortosetup\.venv\Scripts\python.exe` y para el Python base (Configuración → Sistema → Pantalla → Gráficos). Debe documentarse en la instalación.
+- **O9 (optimización futura):** la preparación para visualizar es la etapa más lenta (0,6 a 4,0 s) porque el STL no trae vértices unidos. Unirlos **solo para visualizar** (regla 7.19) reduciría tiempo y memoria. No bloquea.
+- **Límite de representatividad:** una sola arcada de tamaño moderado. Escaneos de mayor resolución o dos arcadas pueden pesar 2 a 4 veces más; el margen frente a las metas es amplio.

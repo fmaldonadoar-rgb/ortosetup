@@ -83,3 +83,53 @@ def test_wsl_not_installed_skips_distribution_query():
     assert not ve.wsl_installed(1, msg_es)
     assert not ve.wsl_installed(-1, "(no encontrado: wsl)")
     assert ve.wsl_installed(0, "Distribución predeterminada: Ubuntu\nVersión predeterminada: 2")
+
+
+def _load_medir():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("medir_rendimiento",
+                                                  ROOT / "scripts" / "medir_rendimiento.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod  # necesario para los dataclasses del script
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_stl_header_inspection_detects_text(tmp_path):
+    """AC10: la cabecera de un STL binario puede traer texto (p. ej., un nombre)."""
+    m = _load_medir()
+    tri = b"\x00" * 50
+    con_texto = tmp_path / "a.stl"
+    con_texto.write_bytes(b"Paciente Ejemplo Escaner X".ljust(80, b"\x00")
+                          + (1).to_bytes(4, "little") + tri)
+    sin_texto = tmp_path / "b.stl"
+    sin_texto.write_bytes(b"\x00" * 80 + (1).to_bytes(4, "little") + tri)
+    ascii_stl = tmp_path / "c.stl"
+    ascii_stl.write_text("solid NombrePaciente\nendsolid\n", encoding="utf-8")
+    assert m.inspeccionar_cabecera_stl(con_texto).tipo == "binario"
+    assert "Paciente Ejemplo" in m.inspeccionar_cabecera_stl(con_texto).texto
+    assert not m.inspeccionar_cabecera_stl(sin_texto).tiene_texto
+    c = m.inspeccionar_cabecera_stl(ascii_stl)
+    assert c.tipo == "ascii" and c.texto == "NombrePaciente"
+
+
+def test_performance_report_has_no_identifying_data(tmp_path):
+    """AC10 / §18: el reporte no incluye nombre, ruta ni texto de la cabecera."""
+    pytest.importorskip("pyvista")
+    import os
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    m = _load_medir()
+    mesh = m.malla_sintetica(5000)
+    assert 4000 < len(mesh.faces) < 6000
+    secreto = tmp_path / "Juan Perez Rut 12345678.stl"
+    mesh.export(secreto)
+    data = bytearray(secreto.read_bytes())
+    data[:80] = b"Juan Perez".ljust(80, b" ")
+    secreto.write_bytes(bytes(data))
+    salida = tmp_path / "reporte.txt"
+    assert m.main([str(secreto), "--cuadros", "4", "--ancho", "320", "--alto", "240",
+                   "--mostrar-cabecera", "--salida", str(salida)]) == 0
+    texto = salida.read_text(encoding="utf-8")
+    assert "Juan" not in texto and "Perez" not in texto and "12345678" not in texto
+    assert str(tmp_path) not in texto
+    assert "CONTIENE TEXTO" in texto and "Triangulos:" in texto and "FPS" in texto
